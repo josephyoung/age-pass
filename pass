@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+AGE_DIR="${HOME}/.age"
+KEY_FILE="${AGE_DIR}/keys.txt"
+SECRETS_DIR="${AGE_DIR}/secrets"
+
+cmd_insert() {
+    local name="$1"
+    if [[ -z "$name" ]]; then
+        usage >&2
+        return 1
+    fi
+    local secret_path="${SECRETS_DIR}/${name}.age"
+
+    # Auto-generate keypair if not exists
+    if [[ ! -f "$KEY_FILE" ]]; then
+        mkdir -p "$AGE_DIR"
+        age-keygen -o "$KEY_FILE" 2>/dev/null
+        chmod 600 "$KEY_FILE"
+    fi
+
+    # Read public key
+    local pubkey
+    pubkey="$(grep -m1 'public key:' "$KEY_FILE" | awk '{print $NF}')"
+
+    # Check if already exists (prompt before reading password)
+    if [[ -f "$secret_path" ]]; then
+        read -r -p "Overwrite? [y/N] " answer
+        if [[ "$answer" != "y" && "$answer" != "Y" ]]; then
+            return 0
+        fi
+    fi
+
+    # Read password from stdin
+    local password
+    read -r password
+
+    # Encrypt and save
+    mkdir -p "$(dirname "$secret_path")"
+    echo "$password" | age -r "$pubkey" -o "$secret_path"
+}
+
+cmd_show() {
+    local name="$1"
+    if [[ -z "$name" ]]; then
+        usage >&2
+        return 1
+    fi
+    local secret_path="${SECRETS_DIR}/${name}.age"
+
+    if [[ ! -f "$secret_path" ]]; then
+        echo "Error: ${name} not found" >&2
+        return 1
+    fi
+
+    age -d -i "$KEY_FILE" "$secret_path"
+}
+
+cmd_list() {
+    if [[ ! -d "$SECRETS_DIR" ]] || [[ -z "$(ls -A "$SECRETS_DIR" 2>/dev/null)" ]]; then
+        echo "(empty)"
+        return 0
+    fi
+    tree --noreport "$SECRETS_DIR" | sed "s|${SECRETS_DIR}/||; s/\.age//g"
+}
+
+cmd_rm() {
+    local name="$1"
+    if [[ -z "$name" ]]; then
+        usage >&2
+        return 1
+    fi
+    local secret_path="${SECRETS_DIR}/${name}.age"
+
+    if [[ ! -f "$secret_path" ]]; then
+        echo "Error: ${name} not found" >&2
+        return 1
+    fi
+
+    rm "$secret_path"
+}
+
+usage() {
+    echo "Usage: pass [show|insert|list|rm|delete|help] [name]"
+}
+
+# --- Main ---
+
+case "${1:-}" in
+    insert)
+        cmd_insert "${2:-}"
+        ;;
+    show)
+        cmd_show "${2:-}"
+        ;;
+    list|"")
+        cmd_list
+        ;;
+    rm|delete)
+        cmd_rm "${2:-}"
+        ;;
+    *)
+        usage
+        exit 1
+        ;;
+esac
