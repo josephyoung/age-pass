@@ -63,7 +63,7 @@ cmd_list() {
         echo "(empty)"
         return 0
     fi
-    tree --noreport "$SECRETS_DIR" | tail -n +2 | sed 's/\.age$//'
+    (echo "."; tree --noreport "$SECRETS_DIR" | tail -n +2) | sed 's/\.age$//'
 }
 
 cmd_rm() {
