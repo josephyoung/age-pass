@@ -32,9 +32,10 @@ cmd_insert() {
         fi
     fi
 
-    # Read password from stdin
+    # Read password silently
     local password
-    read -r password
+    read -r -s -p "Enter password: " password
+echo
 
     # Encrypt and save
     mkdir -p "$(dirname "$secret_path")"
