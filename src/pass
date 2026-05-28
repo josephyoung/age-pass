@@ -83,7 +83,7 @@ cmd_rm() {
 }
 
 usage() {
-    echo "Usage: pass [show|insert|list|ls|rm|delete|help] [name]"
+    echo "Usage: pass [show|insert|list|ls|rm|remove|delete|help] [name]"
 }
 
 # --- Main ---
@@ -98,7 +98,7 @@ case "${1:-}" in
     list|ls|"")
         cmd_list
         ;;
-    rm|delete)
+    rm|remove|delete)
         cmd_rm "${2:-}"
         ;;
     help)
