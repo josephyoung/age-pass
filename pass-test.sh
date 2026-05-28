@@ -147,7 +147,7 @@ echo ""
 
 begin_test "first insert auto-generates keypair and encrypts"
     # Run insert with piped password
-    echo "my-secret-123" | run_pass insert test-key
+    run_pass insert test-key <<< "my-secret-123"
     assert_exit_code 0
     # Key file should be created
     assert_file_exists "$KEY_FILE"
@@ -163,9 +163,9 @@ end_test
 # --- RED→GREEN #2: insert + show basic flow (multiple entries) ---
 
 begin_test "insert and show multiple entries"
-    echo "password-aaa" | run_pass insert entry-a
+    run_pass insert entry-a <<< "password-aaa"
     assert_exit_code 0
-    echo "password-bbb" | run_pass insert entry-b
+    run_pass insert entry-b <<< "password-bbb"
     assert_exit_code 0
     assert_file_exists "$SECRETS_DIR/entry-a.age"
     assert_file_exists "$SECRETS_DIR/entry-b.age"
@@ -181,9 +181,9 @@ end_test
 # --- RED→GREEN #3: list displays entries ---
 
 begin_test "list shows all entries"
-    echo "pw1" | run_pass insert alpha
-    echo "pw2" | run_pass insert beta
-    echo "pw3" | run_pass insert gamma
+    run_pass insert alpha <<< "pw1"
+    run_pass insert beta <<< "pw2"
+    run_pass insert gamma <<< "pw3"
     run_pass list
     assert_exit_code 0
     assert_stdout_contains "alpha"
@@ -195,7 +195,7 @@ end_test
 # --- RED→GREEN #4: rm deletes entry ---
 
 begin_test "rm deletes entry"
-    echo "secret" | run_pass insert to-delete
+    run_pass insert to-delete <<< "secret"
     assert_exit_code 0
     assert_file_exists "$SECRETS_DIR/to-delete.age"
     run_pass rm to-delete
@@ -225,10 +225,10 @@ end_test
 # --- RED→GREEN #6: insert existing entry prompts overwrite ---
 
 begin_test "insert existing entry prompts overwrite"
-    echo "first" | run_pass insert dup-key
+    run_pass insert dup-key <<< "first"
     assert_exit_code 0
     # Second insert should prompt (we pipe 'y' to confirm)
-    printf "y\nsecond\n" | run_pass insert dup-key
+    run_pass insert dup-key <<< $'y\nsecond'
     assert_exit_code 0
     run_pass show dup-key
     assert_stdout_equals "second"
@@ -236,9 +236,9 @@ begin_test "insert existing entry prompts overwrite"
 end_test
 
 begin_test "insert existing entry with 'n' cancels"
-    echo "keep-me" | run_pass insert cancel-key
+    run_pass insert cancel-key <<< "keep-me"
     assert_exit_code 0
-    printf "n\nnew-val\n" | run_pass insert cancel-key
+    run_pass insert cancel-key <<< $'n\nnew-val'
     # Should still have old value
     run_pass show cancel-key
     assert_stdout_equals "keep-me"
