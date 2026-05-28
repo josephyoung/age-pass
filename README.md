@@ -2,9 +2,9 @@
 
 A password manager using [age](https://github.com/FiloSottile/age) encryption, compatible with a subset of [pass](https://www.passwordstore.org/) commands. Built for Termux on Android — no GPG agent needed.
 
-用 [age](https://github.com/FiloSottile/age) 加密的密码管理器，兼容 [pass](https://www.passwordstore.org/) 的部分命令。专为 Termux on Android 打造，无需 GPG agent。
+[中文版](README-zh.md)
 
-## Install / 安装
+## Install
 
 ```bash
 git clone https://github.com/josephyoung/age-pass.git
@@ -16,24 +16,22 @@ cd age-pass
 
 Requires `age` and `tree`. `install.sh` installs them via `pkg` if missing (Termux).
 
-依赖 `age` 和 `tree`，未安装时 `install.sh` 会自动通过 `pkg` 安装。
-
-## Usage / 用法
+## Usage
 
 ```
 pass [show|insert|list|rm|delete|help] [name]
 ```
 
 ```bash
-pass insert github/token    # silent password input / 静默输入密码
-pass show github/token      # decrypt and print / 解密输出
-pass list                   # tree view / 树形列出所有条目
-pass rm github/token        # delete / 删除
-pass delete github/token    # alias for rm / 同上
-pass help                   # show usage / 帮助
+pass insert github/token    # silent password input
+pass show github/token      # decrypt and print
+pass list                   # tree view
+pass rm github/token        # delete
+pass delete github/token    # alias for rm
+pass help                   # show usage
 ```
 
-## Custom store / 自定义存储目录
+## Custom store
 
 ```bash
 PASS_AGE_DIR=/custom/path pass list
@@ -41,9 +39,7 @@ PASS_AGE_DIR=/custom/path pass list
 
 Or set the default at install time via `install.sh` second argument.
 
-或安装时通过 `install.sh` 第二个参数指定默认值。
-
-## Structure / 结构
+## Structure
 
 ```
 ~/.age/
@@ -55,7 +51,7 @@ Or set the default at install time via `install.sh` second argument.
         └── token.age
 ```
 
-## Tests / 测试
+## Tests
 
 ```bash
 ./pass-test.sh
