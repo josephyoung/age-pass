@@ -113,16 +113,16 @@ REFACTOR:      提取重复、整理代码
 
 ## 实施步骤
 
-- [ ] 1. 编写测试框架 `pass-test.sh`（临时 HOME、断言函数）
-- [ ] 2. RED→GREEN #1：首次 insert 自动生成密钥对
-- [ ] 3. RED→GREEN #2：insert + show 基本流程
-- [ ] 4. RED→GREEN #3：list 显示条目
-- [ ] 5. RED→GREEN #4：rm 删除
-- [ ] 6. RED→GREEN #5：缺参数报错
-- [ ] 7. RED→GREEN #6：已存在覆盖提示
-- [ ] 8. RED→GREEN #7：help + delete 别名 + 空 list
-- [ ] 9. REFACTOR：整理代码
-- [ ] 10. 编写 `install.sh` 安装脚本
+- [x] 1. 编写测试框架 `pass-test.sh`（临时 HOME、断言函数）
+- [x] 2. RED→GREEN #1：首次 insert 自动生成密钥对
+- [x] 3. RED→GREEN #2：insert + show 基本流程
+- [x] 4. RED→GREEN #3：list 显示条目
+- [x] 5. RED→GREEN #4：rm 删除
+- [x] 6. RED→GREEN #5：缺参数报错
+- [x] 7. RED→GREEN #6：已存在覆盖提示
+- [x] 8. RED→GREEN #7：help + delete 别名 + 空 list
+- [x] 9. REFACTOR：整理代码
+- [x] 10. 编写 `install.sh` 安装脚本
 
 ## 决策清单
 
