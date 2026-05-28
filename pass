@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-AGE_DIR="${HOME}/.age"
+AGE_DIR="${PASS_AGE_DIR:-$HOME/.age}"
 KEY_FILE="${AGE_DIR}/keys.txt"
 SECRETS_DIR="${AGE_DIR}/secrets"
 
