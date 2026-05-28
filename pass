@@ -100,6 +100,9 @@ case "${1:-}" in
     rm|delete)
         cmd_rm "${2:-}"
         ;;
+    help)
+        usage
+        ;;
     *)
         usage
         exit 1

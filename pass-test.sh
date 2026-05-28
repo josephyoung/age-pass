@@ -245,4 +245,29 @@ begin_test "insert existing entry with 'n' cancels"
     pass_test
 end_test
 
+# --- RED→GREEN #7: help + delete alias + empty list ---
+
+begin_test "help prints usage and exits zero"
+    run_pass help
+    assert_exit_code 0
+    assert_stdout_contains "Usage"
+    pass_test
+end_test
+
+begin_test "delete is alias for rm"
+    run_pass insert to-delete <<< "gone"
+    assert_exit_code 0
+    assert_file_exists "$SECRETS_DIR/to-delete.age"
+    run_pass delete to-delete
+    assert_exit_code 0
+    assert_file_not_exists "$SECRETS_DIR/to-delete.age"
+    pass_test
+end_test
+
+begin_test "empty list does not error"
+    run_pass list
+    assert_exit_code 0
+    pass_test
+end_test
+
 summary
