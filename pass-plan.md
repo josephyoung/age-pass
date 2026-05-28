@@ -40,8 +40,10 @@ pass help                    # 帮助信息
 
 ```
 ~/projects/age-pass/
-├── pass                    # 主脚本（开发位置）
-├── pass-test.sh            # 测试脚本
+├── src/
+│   └── pass                # 主脚本（开发位置）
+├── tests/
+│   └── pass-test.sh        # 测试脚本
 ├── install.sh              # 安装脚本
 ├── pass-plan.md
 └── handoff.md

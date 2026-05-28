@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PASS_SCRIPT="$(cd "$(dirname "$0")" && pwd)/pass"
-INSTALL_SCRIPT="$(cd "$(dirname "$0")" && pwd)/install.sh"
+PASS_SCRIPT="$(cd "$(dirname "$0")" && pwd)/../src/pass"
+INSTALL_SCRIPT="$(cd "$(dirname "$0")" && pwd)/../install.sh"
 TESTS_RUN=0
 TESTS_PASSED=0
 TESTS_FAILED=0

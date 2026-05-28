@@ -4,6 +4,7 @@ set -euo pipefail
 TARGET_DIR="${1:-$HOME/bin}"
 AGE_DIR="${2:-$HOME/.age}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PASS_SRC="$SCRIPT_DIR/src/pass"
 
 # --- Check & install dependencies ---
 
@@ -17,7 +18,7 @@ done
 # --- Install script ---
 
 mkdir -p "$TARGET_DIR"
-cp "$SCRIPT_DIR/pass" "$TARGET_DIR/pass"
+cp "$PASS_SRC" "$TARGET_DIR/pass"
 
 # Set age store directory default in installed script
 sed -i "s|^AGE_DIR=.*|AGE_DIR=\"\${PASS_AGE_DIR:-$AGE_DIR}\"|" "$TARGET_DIR/pass"
