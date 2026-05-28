@@ -2,6 +2,7 @@
 set -euo pipefail
 
 PASS_SCRIPT="$(cd "$(dirname "$0")" && pwd)/pass"
+INSTALL_SCRIPT="$(cd "$(dirname "$0")" && pwd)/install.sh"
 TESTS_RUN=0
 TESTS_PASSED=0
 TESTS_FAILED=0
@@ -13,7 +14,6 @@ PASS_STDERR=""
 # --- Test helpers ---
 
 setup() {
-    # Create isolated temp HOME
     TEST_HOME="$(mktemp -d)"
     export HOME="$TEST_HOME"
     export AGE_DIR="$HOME/.age"
@@ -26,7 +26,6 @@ teardown() {
 }
 
 run_pass() {
-    # Run pass script, capture stdout, stderr, and exit code
     local stdout_file stderr_file
     stdout_file="$(mktemp)"
     stderr_file="$(mktemp)"
@@ -146,14 +145,10 @@ echo ""
 # --- RED→GREEN #1: first insert auto-generates keypair ---
 
 begin_test "first insert auto-generates keypair and encrypts"
-    # Run insert with piped password
     run_pass insert test-key <<< "my-secret-123"
     assert_exit_code 0
-    # Key file should be created
     assert_file_exists "$KEY_FILE"
-    # Encrypted file should exist
     assert_file_exists "$SECRETS_DIR/test-key.age"
-    # Show should decrypt to original password
     run_pass show test-key
     assert_exit_code 0
     assert_stdout_equals "my-secret-123"
@@ -227,7 +222,6 @@ end_test
 begin_test "insert existing entry prompts overwrite"
     run_pass insert dup-key <<< "first"
     assert_exit_code 0
-    # Second insert should prompt (we pipe 'y' to confirm)
     run_pass insert dup-key <<< $'y\nsecond'
     assert_exit_code 0
     run_pass show dup-key
@@ -239,7 +233,6 @@ begin_test "insert existing entry with 'n' cancels"
     run_pass insert cancel-key <<< "keep-me"
     assert_exit_code 0
     run_pass insert cancel-key <<< $'n\nnew-val'
-    # Should still have old value
     run_pass show cancel-key
     assert_stdout_equals "keep-me"
     pass_test
@@ -255,12 +248,12 @@ begin_test "help prints usage and exits zero"
 end_test
 
 begin_test "delete is alias for rm"
-    run_pass insert to-delete <<< "gone"
+    run_pass insert to-delete2 <<< "gone"
     assert_exit_code 0
-    assert_file_exists "$SECRETS_DIR/to-delete.age"
-    run_pass delete to-delete
+    assert_file_exists "$SECRETS_DIR/to-delete2.age"
+    run_pass delete to-delete2
     assert_exit_code 0
-    assert_file_not_exists "$SECRETS_DIR/to-delete.age"
+    assert_file_not_exists "$SECRETS_DIR/to-delete2.age"
     pass_test
 end_test
 
@@ -268,6 +261,81 @@ begin_test "empty list does not error"
     run_pass list
     assert_exit_code 0
     pass_test
+end_test
+
+# --- Install tests ---
+
+begin_test "install with defaults creates pass and age dir"
+    _thome="$(mktemp -d)"
+    _tbin="$_thome/bin"
+    mkdir -p "$_tbin"
+    bash "$INSTALL_SCRIPT" "$_tbin" "$_thome/.age" >/dev/null 2>&1
+    assert_file_exists "$_tbin/pass"
+    assert_dir_exists "$_thome/.age"
+    rm -rf "$_thome"
+    pass_test
+end_test
+
+begin_test "installed pass has correct age dir baked in"
+    _thome="$(mktemp -d)"
+    _tbin="$_thome/bin"
+    _adir="$_thome/custom-store"
+    mkdir -p "$_tbin"
+    bash "$INSTALL_SCRIPT" "$_tbin" "$_adir" >/dev/null 2>&1
+    if ! grep -q "PASS_AGE_DIR:-$_adir" "$_tbin/pass"; then
+        echo "  FAIL: age dir not baked into installed pass"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    else
+        pass_test
+    fi
+    rm -rf "$_thome"
+end_test
+
+begin_test "age store dir has correct permissions"
+    _thome="$(mktemp -d)"
+    _tbin="$_thome/bin"
+    _adir="$_thome/.age"
+    mkdir -p "$_tbin"
+    bash "$INSTALL_SCRIPT" "$_tbin" "$_adir" >/dev/null 2>&1
+    _perms="$(stat -c '%a' "$_adir" 2>/dev/null || stat -f '%Lp' "$_adir" 2>/dev/null)"
+    if [[ "$_perms" != "700" ]]; then
+        echo "  FAIL: age dir perms $_perms, expected 700"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    else
+        pass_test
+    fi
+    rm -rf "$_thome"
+end_test
+
+begin_test "installed pass is executable"
+    _thome="$(mktemp -d)"
+    _tbin="$_thome/bin"
+    mkdir -p "$_tbin"
+    bash "$INSTALL_SCRIPT" "$_tbin" "$_thome/.age" >/dev/null 2>&1
+    if [[ ! -x "$_tbin/pass" ]]; then
+        echo "  FAIL: pass is not executable"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    else
+        pass_test
+    fi
+    rm -rf "$_thome"
+end_test
+
+begin_test "installed pass works end-to-end"
+    _thome="$(mktemp -d)"
+    _tbin="$_thome/bin"
+    _adir="$_thome/.age"
+    mkdir -p "$_tbin"
+    bash "$INSTALL_SCRIPT" "$_tbin" "$_adir" >/dev/null 2>&1
+    HOME="$_thome" "$_tbin/pass" insert e2e <<< "secret123" 2>/dev/null
+    _out="$(HOME="$_thome" "$_tbin/pass" show e2e)"
+    if [[ "$_out" != "secret123" ]]; then
+        echo "  FAIL: e2e show got '$_out', expected 'secret123'"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    else
+        pass_test
+    fi
+    rm -rf "$_thome"
 end_test
 
 summary
