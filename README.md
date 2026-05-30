@@ -1,5 +1,7 @@
 # age-pass
 
+**Version: 1.0.0**
+
 A password manager using [age](https://github.com/FiloSottile/age) encryption, compatible with a subset of [pass](https://www.passwordstore.org/) commands. Built for Termux on Android — no GPG agent needed.
 
 Why not the original `pass`? GPG requires `gpg-agent`, which relies on Unix sockets and process forking — both problematic under Android's process isolation and `proot` environment in Termux. `age` has no agent, no daemons, just file-based key pairs.
@@ -62,3 +64,7 @@ Or set the default at install time via `install.sh` second argument.
 ## License
 
 MIT
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.

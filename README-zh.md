@@ -1,5 +1,7 @@
 # age-pass
 
+**版本: 1.0.0**
+
 用 [age](https://github.com/FiloSottile/age) 加密的密码管理器，兼容 [pass](https://www.passwordstore.org/) 的部分命令。专为 Termux on Android 打造，无需 GPG agent。
 
 为什么不用原版 `pass`？GPG 依赖 `gpg-agent`，需要 Unix socket 和进程 fork，在 Android 的进程隔离和 Termux 的 `proot` 环境下经常出问题。`age` 无 agent、无守护进程，只有文件级密钥对。
@@ -62,3 +64,7 @@ PASS_AGE_DIR=/custom/path pass list
 ## License
 
 MIT
+
+## 更新日志
+
+详见 [CHANGELOG.md](CHANGELOG.md)
