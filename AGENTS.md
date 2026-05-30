@@ -10,33 +10,45 @@ alwaysApply: true
 # Architecture
 
 - `src/pass` — the main bash script (~80 LOC). Single file, no dependencies beyond `age` and `tree`.
-- `install.sh` — installs pass script + deps. Supports Termux (pkg) and macOS (brew).
-- `tests/pass-test.sh` — pure bash test harness. No framework. Run with `bash tests/pass-test.sh`.
+- `src/pass-migrate` — migration script to copy passwords from original GPG pass to age-pass.
+- `install.sh` — installs pass script + deps. Supports Termux (pkg) and macOS (brew). Saves install path to `~/.age/install-info.txt`.
+- `tests/pass-test.sh` — pure bash test harness for `src/pass`.
+- `tests/pass-migrate-test.sh` — tests for migration script (uses mock original pass).
+- `tests/mock-orig-pass.sh` — mock original pass for testing migration (plaintext storage).
 - Store layout: `~/.age/keys.txt` (keypair) + `~/.age/secrets/**/*.age` (encrypted files).
 
 # Conventions
 
 - **Bash only.** No Python, no external test frameworks.
 - **Minimal dependencies.** Only `age`, `tree`, and standard coreutils.
-- **Tests are assertions + helpers.** `assert_*` functions check exit codes, stdout, stderr, file existence. No mocking.
+- **Tests are assertions + helpers.** `assert_*` functions check exit codes, stdout, stderr, file existence. No mocking frameworks.
 - **Each test does setup/teardown** via temp dirs — tests never touch real user data.
 - Style: `set -euo pipefail`, double brackets, 4-space indent.
 
 # Commands
 
 ```bash
-bash tests/pass-test.sh          # run all tests
+# Core pass
 bash src/pass insert <name>      # add a password (reads from stdin)
 bash src/pass show <name>        # decrypt and print
 bash src/pass list               # tree view of secrets
 bash src/pass rm <name>          # delete
 bash src/pass help               # usage
+
+# Migration
+bash src/pass-migrate --orig-pass /path/to/pass --age-pass /path/to/age-pass
+bash src/pass-migrate --dry-run  # preview only
+bash src/pass-migrate --force    # overwrite existing entries
+
+# Tests
+bash tests/pass-test.sh          # run all pass tests
+bash tests/pass-migrate-test.sh  # run migration tests
 ```
 
 # Rules
 
 1. **Single-file simplicity.** The main script should remain one file. Don't split into modules.
 2. **No new dependencies.** If you think you need one, ask first.
-3. **Tests must pass before merge.** Run `bash tests/pass-test.sh` after any change.
+3. **Tests must pass before merge.** Run both test scripts after any change.
 4. **Preserve Termux compatibility.** Android's process model is the primary constraint.
 5. **Don't over-engineer.** This is a small utility. Keep it small.

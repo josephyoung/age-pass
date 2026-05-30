@@ -82,6 +82,9 @@ chmod +x "$TARGET_DIR/pass"
 mkdir -p "$AGE_DIR"
 chmod 700 "$AGE_DIR"
 
+# Save install info for pass-migrate auto-detect
+echo "bin=$TARGET_DIR" > "$AGE_DIR/install-info.txt"
+
 echo "Installed pass to $TARGET_DIR/pass"
 echo "Password store: $AGE_DIR"
 echo "Make sure $TARGET_DIR is in your PATH."

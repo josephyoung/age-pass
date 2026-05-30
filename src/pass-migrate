@@ -1,0 +1,255 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# --- Defaults ---
+ORIG_PASS=""
+AGE_PASS=""
+DRY_RUN=false
+FORCE=false
+
+# --- Usage ---
+usage() {
+    cat <<EOF
+Usage: pass-migrate [options]
+
+Migrate passwords from original GPG pass to age-pass.
+
+Options:
+  --orig-pass <path>    Path to original pass binary
+  --age-pass <path>     Path to age-pass binary
+  --dry-run             Preview migration, don't write
+  --force               Overwrite existing entries without prompting
+  --help                Show this help
+EOF
+}
+
+# --- Resolve paths ---
+resolve_orig_pass() {
+    if [[ -n "$ORIG_PASS" ]]; then
+        [[ -x "$ORIG_PASS" ]] || { echo "Error: $ORIG_PASS not found or not executable" >&2; exit 1; }
+        return
+    fi
+
+    # Auto-detect
+    for p in /usr/bin/pass /usr/local/bin/pass "$HOME/.pass"; do
+        if [[ -x "$p" ]]; then
+            ORIG_PASS="$p"
+            return
+        fi
+    done
+
+    # Prompt
+    read -rp "Original pass not found. Enter path: " ORIG_PASS
+    [[ -x "$ORIG_PASS" ]] || { echo "Error: $ORIG_PASS not found or not executable" >&2; exit 1; }
+}
+
+resolve_age_pass() {
+    if [[ -n "$AGE_PASS" ]]; then
+        "$AGE_PASS" help >/dev/null 2>&1 || { echo "Error: $AGE_PASS not working" >&2; exit 1; }
+        return
+    fi
+
+    # Auto-detect
+    for p in "$HOME/bin/pass" "$HOME/.local/bin/pass"; do
+        if [[ -x "$p" ]] && "$p" help >/dev/null 2>&1; then
+            AGE_PASS="$p"
+            return
+        fi
+    done
+
+    # Prompt
+    read -rp "age-pass not found. Enter path: " AGE_PASS
+    "$AGE_PASS" help >/dev/null 2>&1 || { echo "Error: $AGE_PASS not working" >&2; exit 1; }
+}
+
+# --- Strip ANSI color codes ---
+strip_ansi() {
+    sed 's/\x1b\[[0-9;]*m//g'
+}
+
+# --- Get entry list ---
+# Find all .gpg files in the password store, return paths relative to store
+get_entries() {
+    # Try --flat first (our age-pass supports it)
+    local result
+    if result="$("$ORIG_PASS" list --flat 2>/dev/null)" && [[ -n "$result" ]]; then
+        echo "$result"
+        return
+    fi
+
+    # Find the password store directory from the original pass
+    local store_dir=""
+    
+    # Check common locations
+    for d in "$HOME/.password-store" "${PASSWORD_STORE_DIR:-}"; do
+        if [[ -d "$d" ]]; then
+            store_dir="$d"
+            break
+        fi
+    done
+
+    # Try to extract from pass source
+    if [[ -z "$store_dir" ]]; then
+        store_dir="$(grep -m1 'PASSWORD_STORE_DIR' "$ORIG_PASS" 2>/dev/null | sed 's/.*=//;s/"//g;s/ .*//' || true)"
+    fi
+
+    if [[ -z "$store_dir" ]] || [[ ! -d "$store_dir" ]]; then
+        echo "Error: cannot find password store directory" >&2
+        return 1
+    fi
+
+    # Find all .gpg files and convert to pass paths
+    find "$store_dir" -name "*.gpg" -type f | while read -r f; do
+        # Strip store dir prefix and .gpg extension
+        echo "${f#$store_dir/}" | sed 's/\.gpg$//'
+    done | sort
+}
+
+# --- Migrate one entry ---
+migrate_entry() {
+    local key="$1"
+    local value
+
+    # Get value from original pass
+    value="$("$ORIG_PASS" show "$key")" || {
+        echo "  SKIP: failed to read $key" >&2
+        return 1
+    }
+
+    if $DRY_RUN; then
+        echo "  [dry-run] would migrate: $key"
+        return 0
+    fi
+
+    # If force, delete existing entry first (ignore errors if not found)
+    if $FORCE; then
+        "$AGE_PASS" rm "$key" 2>/dev/null || true
+    fi
+
+    # Insert into age-pass
+    echo "$value" | "$AGE_PASS" insert "$key" || {
+        echo "  FAIL: failed to insert $key" >&2
+        return 1
+    }
+
+    echo "  OK: $key"
+}
+
+# --- Verify migration ---
+verify_migration() {
+    echo ""
+    echo "=== Verification ==="
+
+    # Compare tree structure (strip root dir line from tree output)
+    local orig_list age_list
+    orig_list="$("$ORIG_PASS" list 2>/dev/null | strip_ansi | tail -n +2 || echo "(empty)")"
+    age_list="$("$AGE_PASS" list 2>/dev/null | strip_ansi | tail -n +2 || echo "(empty)")"
+
+    if [[ "$orig_list" == "$age_list" ]]; then
+        echo "Tree structure: MATCH"
+    else
+        echo "Tree structure: MISMATCH"
+        echo "  original:"
+        echo "$orig_list"
+        echo "  age-pass:"
+        echo "$age_list"
+        return 1
+    fi
+
+    # Compare values
+    local entries
+    entries="$(get_entries)"
+    if [[ -z "$entries" ]]; then
+        echo "No entries to verify."
+        return 0
+    fi
+
+    local all_ok=true
+    while IFS= read -r key; do
+        local orig_val age_val
+        orig_val="$("$ORIG_PASS" show "$key")" || continue
+        age_val="$("$AGE_PASS" show "$key")" || continue
+
+        if [[ "$orig_val" == "$age_val" ]]; then
+            echo "  $key: OK"
+        else
+            echo "  $key: MISMATCH"
+            all_ok=false
+        fi
+    done <<< "$entries"
+
+    if $all_ok; then
+        echo "All values: MATCH"
+        return 0
+    else
+        echo "Some values: MISMATCH"
+        return 1
+    fi
+}
+
+# --- Parse args ---
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --orig-pass)
+            ORIG_PASS="$2"
+            shift 2
+            ;;
+        --age-pass)
+            AGE_PASS="$2"
+            shift 2
+            ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        --force)
+            FORCE=true
+            shift
+            ;;
+        --help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
+            usage >&2
+            exit 1
+            ;;
+    esac
+done
+
+# --- Main ---
+resolve_orig_pass
+resolve_age_pass
+
+echo "Original pass: $ORIG_PASS"
+echo "age-pass:      $AGE_PASS"
+echo ""
+
+# Get entries
+entries="$(get_entries)"
+if [[ -z "$entries" ]]; then
+    echo "Nothing to migrate."
+    exit 0
+fi
+
+# Count entries
+entry_count="$(echo "$entries" | wc -l | tr -d ' ')"
+echo "Found $entry_count entries to migrate."
+echo ""
+
+# Migrate
+failed=0
+while IFS= read -r key; do
+    migrate_entry "$key" || failed=$((failed + 1))
+done <<< "$entries"
+
+echo ""
+echo "Migration complete. ($failed failures)"
+
+# Verify
+if ! $DRY_RUN; then
+    verify_migration
+fi
+
+exit 0

@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.1.0] - 2026-05-30
+
+### Added
+- `pass-migrate` script to copy passwords from original GPG pass to age-pass
+- `--dry-run` flag for previewing migration without writing
+- `--force` flag for overwriting existing entries
+- Auto-detect or prompt for both original pass and age-pass paths
+- Install path saved to `~/.age/install-info.txt` for auto-detection
+- Migration test suite with mock original pass
+
+### Fixed
+- `get_entries` now works with original GPG pass (no `--flat` support)
+- Tree structure comparison strips ANSI color codes
+
 ## [1.0.0] - 2026-05-30
 
 ### Added
