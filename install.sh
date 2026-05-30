@@ -73,7 +73,7 @@ mkdir -p "$TARGET_DIR"
 cp "$PASS_SRC" "$TARGET_DIR/pass"
 
 # Set age store directory default in installed script
-sed -i "s|^AGE_DIR=.*|AGE_DIR=\"\${PASS_AGE_DIR:-$AGE_DIR}\"|" "$TARGET_DIR/pass"
+sed -i '' "s|^AGE_DIR=.*|AGE_DIR=\"\${PASS_AGE_DIR:-$AGE_DIR}\"|" "$TARGET_DIR/pass"
 
 chmod +x "$TARGET_DIR/pass"
 
