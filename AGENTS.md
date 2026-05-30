@@ -25,6 +25,14 @@ alwaysApply: true
 - **Each test does setup/teardown** via temp dirs — tests never touch real user data.
 - Style: `set -euo pipefail`, double brackets, 4-space indent.
 
+# Git
+
+- **Conventional Commits** format: `<type>(<scope>): <summary>`
+- Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
+- Subject in **English**, imperative mood ("add" not "added")
+- Scope optional but used for `pass`, `migrate`, `install`, `tests`
+- Body only when subject isn't self-explanatory
+
 # Commands
 
 ```bash
@@ -51,4 +59,5 @@ bash tests/pass-migrate-test.sh  # run migration tests
 2. **No new dependencies.** If you think you need one, ask first.
 3. **Tests must pass before merge.** Run both test scripts after any change.
 4. **Preserve Termux compatibility.** Android's process model is the primary constraint.
-5. **Don't over-engineer.** This is a small utility. Keep it small.
+5. **Test against real interfaces.** Original `pass list --flat` doesn't exist. Verify actual CLI behavior before assuming flags/features.
+6. **Don't over-engineer.** This is a small utility. Keep it small.
